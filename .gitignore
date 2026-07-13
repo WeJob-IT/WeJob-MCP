@@ -1,0 +1,18 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local envs / secrets — should never appear here anyway
+.env
+.env.*
+*.local
+
+# Node — the plugin is manifest-only, but guard against accidental installs
+node_modules/

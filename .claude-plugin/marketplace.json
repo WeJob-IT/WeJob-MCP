@@ -1,0 +1,19 @@
+{
+  "name": "wejob",
+  "owner": {
+    "name": "WeJob"
+  },
+  "metadata": {
+    "description": "Official WeJob plugins: read-only discovery of public jobs, formations, and company profiles via the WeJob MCP server."
+  },
+  "plugins": [
+    {
+      "name": "wejob",
+      "source": "./plugins/wejob",
+      "description": "Search public WeJob jobs, formations, and company profiles. Read-only access to the WeJob production MCP server.",
+      "author": {
+        "name": "WeJob"
+      }
+    }
+  ]
+}
