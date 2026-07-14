@@ -9,6 +9,7 @@ directly from Claude.
 - MCP endpoint: `https://mcp.wejob.ch/mcp` (HTTPS, no authentication)
 - Scope: **public, read-only** discovery data
 - License: [MIT](LICENSE)
+- Validated direct MCP clients: GitHub Copilot in VS Code, Gemini CLI, and Grok/xAI
 
 This repository is a **public mirror** dedicated to the Anthropic plugin
 distribution. The underlying MCP server (which returns the data) is a separate
@@ -42,6 +43,58 @@ a **custom connector** — no repository or install required:
 
 Settings → Connectors → Add custom connector → `https://mcp.wejob.ch/mcp`
 (no authentication).
+
+## Direct MCP clients
+
+The plugin bundle is for Claude surfaces, but the public MCP endpoint can also
+be used directly by other MCP-compatible clients:
+
+### GitHub Copilot in VS Code
+
+Add the server through `MCP: Open User Configuration` or `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "wejob": {
+      "type": "http",
+      "url": "https://mcp.wejob.ch/mcp"
+    }
+  }
+}
+```
+
+Then run `MCP: List Servers`, start `wejob` if needed, and use Copilot Chat in
+Agent mode.
+
+### Gemini CLI
+
+Add the server to `~/.gemini/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "wejob": {
+      "httpUrl": "https://mcp.wejob.ch/mcp",
+      "timeout": 60000,
+      "trust": false
+    }
+  }
+}
+```
+
+Restart Gemini CLI, then run `/mcp`.
+
+### Grok / xAI
+
+In Grok web, add a custom MCP connector named `WeJob` with:
+
+```text
+https://mcp.wejob.ch/mcp
+```
+
+xAI Remote MCP Tools can use the same URL as `server_url` with a `server_label`
+such as `wejob`.
 
 ## Verify install
 

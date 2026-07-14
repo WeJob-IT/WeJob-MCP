@@ -7,6 +7,7 @@ companies) from Claude.
 - Auth: none (public read-only)
 - Skill: `skills/wejob/SKILL.md` — instructs Claude when and how to call the
   WeJob MCP tools
+- Validated direct MCP clients: GitHub Copilot in VS Code, Gemini CLI, and Grok/xAI
 
 ## Install
 
@@ -23,6 +24,17 @@ Verify:
 claude mcp list
 # → plugin:wejob:wejob   https://mcp.wejob.ch/mcp (HTTP)   ✓ Connected
 ```
+
+## Other validated MCP clients
+
+These clients use the public MCP endpoint directly, without installing this
+Claude plugin:
+
+- GitHub Copilot in VS Code: `type: "http"`, `url: "https://mcp.wejob.ch/mcp"`
+- Gemini CLI: `httpUrl: "https://mcp.wejob.ch/mcp"`
+- Grok/xAI: custom MCP connector or xAI Remote MCP Tools with `server_url`
+
+See the [root README](../../README.md) for copy-paste configuration examples.
 
 ## Point the plugin at a local MCP server (development)
 
