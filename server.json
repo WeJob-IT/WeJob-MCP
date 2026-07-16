@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ch.wejob/wejob",
+  "title": "WeJob",
+  "description": "Read-only MCP server for public WeJob jobs, formations, and companies.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/WeJob-IT/WeJob-MCP",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.wejob.ch/mcp"
+    }
+  ]
+}

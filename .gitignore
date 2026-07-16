@@ -16,3 +16,4 @@ desktop.ini
 
 # Node — the plugin is manifest-only, but guard against accidental installs
 node_modules/
+.registry/
