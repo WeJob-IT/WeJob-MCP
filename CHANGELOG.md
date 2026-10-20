@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Documented validated direct MCP usage with GitHub Copilot in VS Code, Gemini CLI, and Grok/xAI.
+- Source code of the MCP server deployed at `https://mcp.wejob.ch/mcp`, with its
+  test suite, in `server/` (published for transparency).
+
+### Changed (MCP server, deployed 2026-10-16)
+- Search filters and sort orders now match the search pages of wejob.ch, with
+  documented values for each search tool.
+- Search results return the real total and next page, and include the location.
+- Company profiles expose their real number of open jobs and trainings.
+- Soft skills are no longer presented as technical skills.
+- Structured logs: caller, upstream API calls and error causes, without
+  request bodies.
 
 ## [0.1.0] — 2026-07-14
 

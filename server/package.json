@@ -1,0 +1,19 @@
+{
+  "name": "wejob-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only MCP server for public WeJob jobs, formations, and companies.",
+  "main": "src/server.js",
+  "exports": {
+    ".": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js --stdio",
+    "start:http": "node src/server.js --http",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,5 +1,7 @@
 # WeJob Plugin for Claude
 
+[![MCP Badge](https://lobehub.com/badge/mcp/wejob-it-wejob-mcp)](https://lobehub.com/mcp/wejob-it-wejob-mcp)
+
 Official Claude plugin for **WeJob**, the Swiss IT job board. This plugin gives
 Claude (Cowork, Claude Code) read-only access to the public WeJob MCP server —
 you can search public job offers, professional formations, and company profiles
@@ -11,10 +13,11 @@ directly from Claude.
 - License: [MIT](LICENSE)
 - Validated direct MCP clients: GitHub Copilot in VS Code, Gemini CLI, and Grok/xAI
 
-This repository is a **public mirror** dedicated to the Anthropic plugin
-distribution. The underlying MCP server (which returns the data) is a separate
-service that runs on WeJob's infrastructure — this repo contains only the
-plugin's manifest, skill, and assets.
+This repository is a **public mirror**. It contains the Claude plugin
+(manifest, skill, and assets) and, for transparency, the source code of the
+MCP server that answers at `https://mcp.wejob.ch/mcp`, in [`server/`](server/).
+The server runs on WeJob's infrastructure and reads the public WeJob API; the
+code published here is the same version as the one deployed.
 
 ## Install
 
@@ -199,6 +202,25 @@ All read-only:
 | `wejob_get_formation` | One public formation |
 | `wejob_search_companies` | Search public company profiles |
 | `wejob_get_company` | One public company profile |
+
+Search tools accept the same filters and sort orders as the search pages of
+wejob.ch, return the total number of matches, and paginate with `page` and
+`limit` (1 to 50).
+
+## Source code
+
+The MCP server lives in [`server/`](server/): a single dependency-free Node.js
+file ([`server/src/server.js`](server/src/server.js)) that speaks MCP over
+STDIO or Streamable HTTP, and its test suite.
+
+```sh
+cd server
+npm test                     # node --test, no install needed (Node 20+)
+WEJOB_API_BASE_URL=https://wejob.ch/api WEJOB_WEB_BASE_URL=https://wejob.ch npm run start:http
+```
+
+See [`server/README.md`](server/README.md) for parameters, logging and
+configuration ([`server/.env.example`](server/.env.example)).
 
 ## Data scope and privacy
 

@@ -12,6 +12,7 @@ desktop.ini
 # Local envs / secrets — should never appear here anyway
 .env
 .env.*
+!.env.example
 *.local
 
 # Node — the plugin is manifest-only, but guard against accidental installs
