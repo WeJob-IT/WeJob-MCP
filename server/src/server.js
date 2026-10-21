@@ -908,6 +908,129 @@ export async function handleJsonRpc(message, client = createWeJobClient(), conte
   }
 }
 
+// Prompts: the three requests users make most, written so the assistant calls the right
+// tools and answers from their results only.
+const PROMPT_ARGUMENT_MAX_LENGTH = 120;
+
+export const prompts = [
+  {
+    name: "find_jobs",
+    title: "Find WeJob jobs",
+    description: "Search public WeJob job offers for a role, optionally in a Swiss city or canton.",
+    arguments: [
+      { name: "role", description: "Role, skill or keyword, e.g. Java developer, data engineer.", required: true },
+      { name: "location", description: "City or canton, e.g. Lausanne, Genève, Zurich.", required: false },
+    ],
+  },
+  {
+    name: "company_overview",
+    title: "WeJob company overview",
+    description: "Present a company's public WeJob profile and its open job offers.",
+    arguments: [
+      { name: "company", description: "Company name, e.g. IT ADVANCED CONSULTING SA.", required: true },
+    ],
+  },
+  {
+    name: "job_summary",
+    title: "Summarize a WeJob job",
+    description: "Summarize one public WeJob job offer from its id or title.",
+    arguments: [
+      { name: "job", description: "Job id returned by a search (job:...) or the job title.", required: true },
+    ],
+  },
+];
+
+function promptArgument(args, name, required) {
+  const value = String(args?.[name] ?? "").replace(/\s+/g, " ").trim().slice(0, PROMPT_ARGUMENT_MAX_LENGTH);
+  if (required && !value) throw jsonRpcError(-32602, `Missing required prompt argument: ${name}`);
+  return value;
+}
+
+function promptMessage(description, text) {
+  return { description, messages: [{ role: "user", content: { type: "text", text } }] };
+}
+
+export function getPrompt(name, args = {}) {
+  const prompt = prompts.find((item) => item.name === name);
+  if (!prompt) throw jsonRpcError(-32602, `Unknown prompt: ${String(name ?? "").slice(0, 60)}`);
+
+  if (name === "find_jobs") {
+    const role = promptArgument(args, "role", true);
+    const location = promptArgument(args, "location", false);
+    return promptMessage(prompt.description, [
+      `Find public WeJob job offers for "${role}"${location ? ` in ${location}` : ""}.`,
+      `Use wejob_search_jobs with query set to one or two keywords for the role${location ? ` and location "${location}"` : ""}.`,
+      "Say how many offers exist (pagination.total), then list up to 10 with title, company, location, application deadline and the WeJob link.",
+      "Use only what the results contain, and offer to open an offer or show the next page. Answer in the user's language.",
+    ].join("\n"));
+  }
+
+  if (name === "company_overview") {
+    const company = promptArgument(args, "company", true);
+    return promptMessage(prompt.description, [
+      `Show the public WeJob profile of "${company}".`,
+      "Find it with wejob_search_companies (query), then open the best match with wejob_get_company.",
+      "Summarize its description, sector, size, locations and website, then list its open job offers with their WeJob links.",
+      "If no company matches, say so and suggest checking the spelling. Answer in the user's language.",
+    ].join("\n"));
+  }
+
+  const job = promptArgument(args, "job", true);
+  return promptMessage(prompt.description, [
+    `Summarize the public WeJob job offer "${job}".`,
+    "If it is an id (job:...), open it with wejob_get_job; otherwise find it with wejob_search_jobs first, then open it.",
+    "Summarize responsibilities, required profile and skills, contract, work mode, location, salary if published and the application deadline, then give the WeJob link to apply.",
+    "Write \"not specified\" for any missing field instead of guessing. Answer in the user's language.",
+  ].join("\n"));
+}
+
+// Resources: reference data an assistant can attach to understand the search tools.
+export const resources = [
+  {
+    uri: "wejob://search-filters",
+    name: "search-filters",
+    title: "WeJob search filters and sorts",
+    description: "Filters, accepted values and sort orders of the job, training and company searches.",
+    mimeType: "application/json",
+  },
+  {
+    uri: "wejob://swiss-cantons",
+    name: "swiss-cantons",
+    title: "Swiss cantons",
+    description: "Codes and names of the 26 Swiss cantons accepted in the location filter, in French, German, Italian and English.",
+    mimeType: "application/json",
+  },
+];
+
+function resourceContent(uri) {
+  if (uri === "wejob://search-filters") {
+    const kinds = { job: "wejob_search_jobs", formation: "wejob_search_formations", company: "wejob_search_companies" };
+    return {
+      limit: { min: 1, max: MAX_SEARCH_LIMIT, default: DEFAULT_SEARCH_LIMIT },
+      results: "Exact matches only; pagination.total gives the number of results.",
+      searches: Object.fromEntries(Object.entries(kinds).map(([kind, tool]) => [tool, {
+        query: SEARCH_KIND_QUERY[kind],
+        filters: Object.fromEntries(SEARCH_KIND_FILTERS[kind].map((key) => [key, FILTER_PROPERTIES[key].description])),
+        sorts: SEARCH_KIND_SORTS[kind],
+      }])),
+    };
+  }
+  if (uri === "wejob://swiss-cantons") {
+    return {
+      usage: "Pass a canton name in any of these languages, or its code, as location.",
+      cantons: SWISS_CANTONS.map(([code, name, aliases]) => ({ code, name, aliases })),
+    };
+  }
+  return null;
+}
+
+export function readResource(uri) {
+  const value = resourceContent(String(uri ?? ""));
+  if (!value) throw jsonRpcError(-32002, `Resource not found: ${String(uri ?? "").slice(0, 100)}`);
+  const resource = resources.find((item) => item.uri === uri);
+  return { contents: [{ uri, mimeType: resource.mimeType, text: JSON.stringify(value, null, 2) }] };
+}
+
 async function dispatchMethod(method, params, client) {
   switch (method) {
     case "initialize":
@@ -915,6 +1038,8 @@ async function dispatchMethod(method, params, client) {
         protocolVersion: params.protocolVersion ?? MCP_PROTOCOL_VERSION,
         capabilities: {
           tools: {},
+          prompts: {},
+          resources: {},
         },
         serverInfo: {
           name: SERVER_NAME,
@@ -932,9 +1057,13 @@ async function dispatchMethod(method, params, client) {
     case "tools/call":
       return callTool(requireString(params.name, "name"), params.arguments ?? {}, client);
     case "resources/list":
-      return { resources: [] };
+      return { resources };
+    case "resources/read":
+      return readResource(params.uri);
     case "prompts/list":
-      return { prompts: [] };
+      return { prompts };
+    case "prompts/get":
+      return getPrompt(params.name, params.arguments ?? {});
     default:
       throw jsonRpcError(-32601, `Method not found: ${method}`);
   }

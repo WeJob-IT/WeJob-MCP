@@ -942,13 +942,72 @@ test("ping returns an empty result", async () => {
   assert.deepEqual(response.result, {});
 });
 
-test("resources/list returns an empty array (base MCP ships no widgets)", async () => {
-  const response = await handleJsonRpc(
-    { jsonrpc: "2.0", id: 3, method: "resources/list", params: {} },
+test("resources: search filters and Swiss cantons, as JSON reference data", async () => {
+  const rpc = (method, params = {}) => handleJsonRpc(
+    { jsonrpc: "2.0", id: 3, method, params },
     {},
     { logger: createLogger({ level: "silent" }) },
   );
-  assert.deepEqual(response.result, { resources: [] });
+  const list = await rpc("resources/list");
+  assert.deepEqual(list.result.resources.map((resource) => resource.uri), ["wejob://search-filters", "wejob://swiss-cantons"]);
+  assert.ok(list.result.resources.every((resource) => resource.name && resource.description && resource.mimeType === "application/json"));
+
+  const filters = await rpc("resources/read", { uri: "wejob://search-filters" });
+  const filtersJson = JSON.parse(filters.result.contents[0].text);
+  assert.equal(filters.result.contents[0].mimeType, "application/json");
+  assert.deepEqual(filtersJson.limit, { min: 1, max: 50, default: 10 });
+  // Same filters and sorts as the tool schemas, never a second list to keep in sync.
+  const jobsSchema = tools.find((tool) => tool.name === "wejob_search_jobs").inputSchema.properties;
+  assert.deepEqual(Object.keys(filtersJson.searches.wejob_search_jobs.filters).sort(),
+    Object.keys(jobsSchema).filter((key) => !["query", "limit", "page", "sort"].includes(key)).sort());
+  assert.deepEqual(filtersJson.searches.wejob_search_jobs.sorts, jobsSchema.sort.enum);
+  assert.ok(filtersJson.searches.wejob_search_companies.sorts.includes("most_jobs"));
+
+  const cantons = JSON.parse((await rpc("resources/read", { uri: "wejob://swiss-cantons" })).result.contents[0].text);
+  assert.equal(cantons.cantons.length, 26);
+  assert.deepEqual(cantons.cantons.find((canton) => canton.code === "GE"), { code: "GE", name: "Genève", aliases: ["geneva", "genf", "ginevra"] });
+
+  const missing = await rpc("resources/read", { uri: "wejob://nope" });
+  assert.equal(missing.error.code, -32002);
+});
+
+test("prompts: find_jobs, company_overview and job_summary guide the assistant to the right tools", async () => {
+  const rpc = (method, params = {}) => handleJsonRpc(
+    { jsonrpc: "2.0", id: 4, method, params },
+    {},
+    { logger: createLogger({ level: "silent" }) },
+  );
+  const list = await rpc("prompts/list");
+  assert.deepEqual(list.result.prompts.map((prompt) => prompt.name), ["find_jobs", "company_overview", "job_summary"]);
+  assert.ok(list.result.prompts.every((prompt) => prompt.description && prompt.arguments.some((argument) => argument.required)));
+
+  const jobs = await rpc("prompts/get", { name: "find_jobs", arguments: { role: "Java developer", location: "Lausanne" } });
+  const jobsText = jobs.result.messages[0].content.text;
+  assert.equal(jobs.result.messages[0].role, "user");
+  assert.match(jobsText, /"Java developer" in Lausanne/);
+  assert.match(jobsText, /wejob_search_jobs/);
+  assert.match(jobsText, /pagination\.total/);
+  const firstLine = (await rpc("prompts/get", { name: "find_jobs", arguments: { role: "data" } })).result.messages[0].content.text.split("\n")[0];
+  assert.equal(firstLine, "Find public WeJob job offers for \"data\".");
+
+  assert.match((await rpc("prompts/get", { name: "company_overview", arguments: { company: "ACME SA" } })).result.messages[0].content.text, /wejob_search_companies[\s\S]*wejob_get_company/);
+  assert.match((await rpc("prompts/get", { name: "job_summary", arguments: { job: "job:01ABC" } })).result.messages[0].content.text, /wejob_get_job[\s\S]*not specified/);
+
+  // A long or multi-line argument is flattened and capped.
+  const long = (await rpc("prompts/get", { name: "find_jobs", arguments: { role: "a\n".repeat(500) } })).result.messages[0].content.text;
+  assert.ok(long.split("\n")[0].length < 200);
+
+  assert.equal((await rpc("prompts/get", { name: "find_jobs", arguments: {} })).error.code, -32602);
+  assert.equal((await rpc("prompts/get", { name: "nope" })).error.code, -32602);
+});
+
+test("initialize announces tools, prompts and resources", async () => {
+  const response = await handleJsonRpc(
+    { jsonrpc: "2.0", id: 5, method: "initialize", params: { protocolVersion: "2025-06-18" } },
+    {},
+    { logger: createLogger({ level: "silent" }) },
+  );
+  assert.deepEqual(response.result.capabilities, { tools: {}, prompts: {}, resources: {} });
 });
 
 test("batch JSON-RPC returns an array of responses in the same order", async () => {

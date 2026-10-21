@@ -19,7 +19,7 @@ The current integration is designed as the shared MCP base for:
 - Gemini CLI: validated with the production HTTP endpoint.
 - Grok/xAI: validated with a custom MCP connector.
 - GitHub Copilot in VS Code: validated with the production HTTP endpoint.
-- MCP test suite: `67/67` passing.
+- MCP test suite: `69/69` passing.
 - Backend filter regression tests: passing for company, language, location, and
   Java vs JavaScript search behavior.
 - Internal MCP logging: structured JSON logs with request id, method/tool,
@@ -39,6 +39,28 @@ All tools are read-only.
 - `wejob_get_formation`: fetch one public active formation.
 - `wejob_search_companies`: search public company profiles.
 - `wejob_get_company`: fetch one public company profile.
+
+## Prompts
+
+Ready-made requests a client can offer to its users (`prompts/list`,
+`prompts/get`). Each one tells the assistant which tools to call and to answer
+from their results only.
+
+- `find_jobs` (`role`, optional `location`): public job offers for a role,
+  with the total count and links.
+- `company_overview` (`company`): a company's public profile and open offers.
+- `job_summary` (`job`: a `job:` id or a title): one offer summarized, with
+  "not specified" for missing fields.
+
+## Resources
+
+Reference data a client can attach as context (`resources/list`,
+`resources/read`, JSON):
+
+- `wejob://search-filters`: filters, accepted values and sort orders of each
+  search tool, built from the same definitions as the tool schemas.
+- `wejob://swiss-cantons`: the 26 cantons with their code and their names in
+  French, German, Italian and English, as accepted by `location`.
 
 ## Search Parameters
 
