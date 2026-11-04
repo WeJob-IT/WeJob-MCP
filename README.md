@@ -1,56 +1,70 @@
-# WeJob Plugin for Claude
+# WeJob MCP
 
 [![MCP Badge](https://lobehub.com/badge/mcp/wejob-it-wejob-mcp)](https://lobehub.com/mcp/wejob-it-wejob-mcp)
 
-Official Claude plugin for **WeJob**, the Swiss IT job board. This plugin gives
-Claude (Cowork, Claude Code) read-only access to the public WeJob MCP server —
-you can search public job offers, professional formations, and company profiles
-directly from Claude.
+Official MCP server for **WeJob**, the Swiss IT job board. It gives any
+MCP-compatible AI assistant read-only access to public WeJob data: search job
+offers, professional formations, and company profiles, then open any of them
+for full details.
 
 - Full documentation: **https://wejob.ch/mcp-wejob**
-- MCP endpoint: `https://mcp.wejob.ch/mcp` (HTTPS, no authentication)
+- MCP endpoint: `https://mcp.wejob.ch/mcp` (Streamable HTTP, no authentication)
+- Official MCP Registry name: `ch.wejob/wejob`
 - Scope: **public, read-only** discovery data
 - License: [MIT](LICENSE)
-- Validated direct MCP clients: GitHub Copilot in VS Code, Gemini CLI, and Grok/xAI
+- Works with: ChatGPT, Claude, GitHub Copilot in VS Code, Gemini CLI, Grok/xAI,
+  and any client that supports remote MCP servers
 
-This repository is a **public mirror**. It contains the Claude plugin
-(manifest, skill, and assets) and, for transparency, the source code of the
-MCP server that answers at `https://mcp.wejob.ch/mcp`, in [`server/`](server/).
-The server runs on WeJob's infrastructure and reads the public WeJob API; the
-code published here is the same version as the one deployed.
+This repository is a **public mirror**. It contains the source code of the MCP
+server that answers at `https://mcp.wejob.ch/mcp`, in [`server/`](server/), and
+a ready-made plugin bundle for Claude. The server runs on WeJob's
+infrastructure and reads the public WeJob API; the code published here is the
+same version as the one deployed.
 
-## Install
+## Quick connect (recommended)
 
-### Claude Code (CLI)
+No install needed: point your MCP client at the remote server.
 
-```sh
-claude plugin marketplace add https://github.com/WeJob-IT/WeJob-MCP
-claude plugin install wejob@wejob
+```json
+{
+  "mcpServers": {
+    "wejob": {
+      "type": "streamable-http",
+      "url": "https://mcp.wejob.ch/mcp"
+    }
+  }
+}
 ```
 
-Verify:
+Client-specific instructions are below. To run the server yourself instead,
+see [Source code](#source-code).
 
-```sh
-claude mcp list
-# → plugin:wejob:wejob   https://mcp.wejob.ch/mcp (HTTP)   ✓ Connected
-```
+## Tools
 
-### Claude Cowork
+All read-only:
 
-Customize → Plugins → Add marketplace → paste this repo's URL → install `wejob`.
+| Tool | Purpose |
+|------|---------|
+| `search` | Unified search across jobs, formations, companies |
+| `fetch` | Fetch one item by composite id (`job:`/`formation:`/`company:`) |
+| `wejob_search_jobs` | Search public active job offers |
+| `wejob_get_job` | One public job offer |
+| `wejob_search_formations` | Search public formations |
+| `wejob_get_formation` | One public formation |
+| `wejob_search_companies` | Search public company profiles |
+| `wejob_get_company` | One public company profile |
 
-### claude.ai / Claude Desktop — no plugin needed
+Search tools accept the same filters and sort orders as the search pages of
+wejob.ch, return the total number of matches, and paginate with `page` and
+`limit` (1 to 50). The server also provides MCP prompts and reference
+resources.
 
-For end users of claude.ai or Claude Desktop, the same server is available as
-a **custom connector** — no repository or install required:
+## Connect your client
 
-Settings → Connectors → Add custom connector → `https://mcp.wejob.ch/mcp`
-(no authentication).
+### ChatGPT
 
-## Direct MCP clients
-
-The plugin bundle is for Claude surfaces, but the public MCP endpoint can also
-be used directly by other MCP-compatible clients:
+WeJob is available in the ChatGPT plugin directory: search for **WeJob** and
+add it.
 
 ### GitHub Copilot in VS Code
 
@@ -99,113 +113,90 @@ https://mcp.wejob.ch/mcp
 xAI Remote MCP Tools can use the same URL as `server_url` with a `server_label`
 such as `wejob`.
 
-## Verify install
+### Claude
 
-Installation is confirmed by two things: **(1)** the deterministic checks
-below show the connection is live, and **(2)** you actually see Claude call
-the WeJob tools when you ask a WeJob question. Both matter — the first alone
-means the plumbing works but the tools may not be used; the second alone can
-be luck.
+**claude.ai / Claude Desktop** — no plugin needed: Settings → Connectors → Add
+custom connector → `https://mcp.wejob.ch/mcp` (no authentication).
 
-### 1. Deterministic checks — is it connected?
+**Claude Code (CLI)** — install the plugin bundle from this repository:
 
-These don't depend on Claude's judgment. Run whichever matches your surface.
+```sh
+claude plugin marketplace add https://github.com/WeJob-IT/WeJob-MCP
+claude plugin install wejob@wejob
+```
 
-**Server health (any surface)**
+Verify:
+
+```sh
+claude mcp list
+# → plugin:wejob:wejob   https://mcp.wejob.ch/mcp (HTTP)   ✓ Connected
+```
+
+**Claude Cowork** — Customize → Plugins → Add marketplace → paste this repo's
+URL → install `wejob`.
+
+The plugin bundle adds a `wejob` skill that teaches Claude when to call the
+WeJob tools instead of inspecting local code or falling back to generic web
+search, plus the connector configuration pointing at `https://mcp.wejob.ch/mcp`.
+
+## Verify the connection
+
+A working setup shows two things: **(1)** the server is reachable and your
+client lists it as connected, and **(2)** the assistant actually calls the
+WeJob tools when you ask a WeJob question. The first alone means the plumbing
+works but the tools may not be used; the second alone can be luck.
+
+### 1. Is it connected?
+
+**Server health (any client)**
 
 ```sh
 curl https://mcp.wejob.ch/health
 # expected: {"ok":true,"name":"wejob-mcp","version":"0.1.0"}
 ```
 
-**Claude Code (CLI)**
+Then check your client's MCP or connector list:
 
-```sh
-claude mcp list       # expected: plugin:wejob:wejob ... ✓ Connected
-claude plugin list    # expected: wejob@wejob installed
-```
+- **VS Code**: `MCP: List Servers` shows `wejob` as running.
+- **Gemini CLI**: `/mcp` lists `wejob` with its tools.
+- **Claude Code**: `claude mcp list` shows `plugin:wejob:wejob ... ✓ Connected`.
+- **ChatGPT, Claude Desktop, claude.ai, Grok**: the WeJob connector shows a
+  connected status in the connectors settings.
 
-**Claude Cowork**
+### 2. Is it actually used?
 
-Same CLI commands, or in the UI: Customize → Plugins → **WeJob** shown as
-installed with a connected status.
-
-**Claude Desktop and claude.ai**
-
-Settings → Connectors → **WeJob** shows a connected/green indicator.
-
-### 2. Behavioral check — is it actually used?
-
-The deterministic checks say the connection is up. To verify the tools are
-actually invoked, use one of the directive prompts below in a **new**
-conversation, and **watch for tool-call indicators** — not just the answer
-text. A well-written text answer without any tool call means Claude answered
-from its own knowledge, not from WeJob.
-
-> On Desktop or claude.ai, first click **+** → Connectors → tick **WeJob** so
-> the connector is enabled for the conversation. Without this step, Claude
-> won't call the tools even if the connector is installed.
+In a **new** conversation, with the WeJob connector enabled, try one of these
+prompts and **watch for tool-call indicators**, not just the answer text. A
+well-written answer without any tool call means the assistant answered from its
+own knowledge, not from WeJob.
 
 **Prompt A — list the tools**
 
 > What WeJob tools do you have available? List them.
 
-Expected: Claude names `wejob_search_jobs`, `wejob_get_job`,
+Expected: the assistant names `wejob_search_jobs`, `wejob_get_job`,
 `wejob_search_formations`, `wejob_get_formation`, `wejob_search_companies`,
-`wejob_get_company`, `search`, `fetch`. If Claude says it has no WeJob tools,
-the connector isn't active in this conversation.
+`wejob_get_company`, `search`, `fetch`. If it says it has no WeJob tools, the
+connector isn't active in this conversation.
 
 **Prompt B — force a tool call**
 
 > Use the WeJob tools to list a few current job offers.
 
-Expected: a tool-call indicator (icon or block above/inside Claude's response,
-showing `wejob_search_jobs` was invoked) followed by results with URLs like
-`https://wejob.ch/jobs/…`. A plain text answer without any tool-call
-indicator means the tool wasn't used — see troubleshooting below.
+Expected: a tool-call indicator showing `wejob_search_jobs` was invoked,
+followed by results with URLs like `https://wejob.ch/jobs/…`.
 
 ### Troubleshooting
 
 - **No tool-call indicator, only text** — the connector is likely installed
-  but not enabled for this conversation. On Desktop / claude.ai, open **+** →
-  Connectors → tick **WeJob**. On Code CLI, exit the session and reopen — new
-  plugins are only picked up by new sessions.
-- **`✗ Failed` or missing from `claude mcp list`** — either the server is
-  unreachable (run the health check first) or the plugin manifest wasn't
-  loaded correctly (re-run `claude plugin install wejob@wejob`).
-- **Connector shown as connected, but no tools appear when enabled** — the
-  MCP handshake likely failed. Health check first; if it returns `ok`,
-  contact support.
-
-## What the plugin ships
-
-- **`wejob` skill** — teaches Claude when to call the WeJob MCP tools instead
-  of inspecting local code or falling back to generic web search.
-- **MCP connector configuration** — points Claude at
-  `https://mcp.wejob.ch/mcp` over HTTPS.
-
-Together they form a coherent bundle: install once, and Claude automatically
-uses the right tools whenever the user asks about WeJob jobs, formations, or
-companies.
-
-### Tools exposed by the MCP server
-
-All read-only:
-
-| Tool | Purpose |
-|------|---------|
-| `search` | Unified search across jobs, formations, companies |
-| `fetch` | Fetch one item by composite id (`job:`/`formation:`/`company:`) |
-| `wejob_search_jobs` | Search public active job offers |
-| `wejob_get_job` | One public job offer |
-| `wejob_search_formations` | Search public formations |
-| `wejob_get_formation` | One public formation |
-| `wejob_search_companies` | Search public company profiles |
-| `wejob_get_company` | One public company profile |
-
-Search tools accept the same filters and sort orders as the search pages of
-wejob.ch, return the total number of matches, and paginate with `page` and
-`limit` (1 to 50).
+  but not enabled for this conversation. In chat apps (ChatGPT, claude.ai,
+  Claude Desktop, Grok), enable WeJob in the conversation's tools or connectors
+  menu. In CLIs (Claude Code, Gemini CLI), start a new session: new servers are
+  only picked up by new sessions.
+- **Server missing or failed in the client's list** — run the health check
+  first. If it returns `ok`, re-check the URL in your configuration.
+- **Connected, but no tools appear** — the MCP handshake likely failed. Health
+  check first; if it returns `ok`, contact support.
 
 ## Source code
 
@@ -216,6 +207,7 @@ STDIO or Streamable HTTP, and its test suite.
 ```sh
 cd server
 npm test                     # node --test, no install needed (Node 20+)
+npm start                    # STDIO
 WEJOB_API_BASE_URL=https://wejob.ch/api WEJOB_WEB_BASE_URL=https://wejob.ch npm run start:http
 ```
 
@@ -224,7 +216,7 @@ configuration ([`server/.env.example`](server/.env.example)).
 
 ## Data scope and privacy
 
-The plugin exposes **public discovery data only**:
+The server exposes **public discovery data only**:
 
 - Public job offers, formations, and company profiles
 - Public URLs back to WeJob pages
