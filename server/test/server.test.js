@@ -1809,3 +1809,12 @@ test("cantons are sent as code and label in any language, other places as typed"
   assert.deepEqual(seen[0].searchParams.getAll("location[]"), ["GE", "Genève"]);
   assert.equal(seen[1].searchParams.get("location"), "Lausanne");
 });
+
+test("resources/templates/list answers an empty list instead of method not found", async () => {
+  const response = await handleJsonRpc(
+    { jsonrpc: "2.0", id: 6, method: "resources/templates/list", params: {} },
+    {},
+    { logger: createLogger({ level: "silent" }) },
+  );
+  assert.deepEqual(response.result, { resourceTemplates: [] });
+});

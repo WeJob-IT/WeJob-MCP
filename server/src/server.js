@@ -1060,6 +1060,9 @@ async function dispatchMethod(method, params, client) {
       return { resources };
     case "resources/read":
       return readResource(params.uri);
+    case "resources/templates/list":
+      // Standard MCP method, called by clients and directory crawlers: no templates here.
+      return { resourceTemplates: [] };
     case "prompts/list":
       return { prompts };
     case "prompts/get":
