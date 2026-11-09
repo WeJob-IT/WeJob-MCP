@@ -38,14 +38,13 @@ See the [root README](../../README.md) for copy-paste configuration examples.
 
 ## Point the plugin at a local MCP server (development)
 
-Override the MCP URL with an environment variable before starting Claude Code:
+The plugin manifest uses the fixed public URL `https://mcp.wejob.ch/mcp`
+(plugin directories require a fixed ASCII URL, without variables). To test a
+local MCP server, add it to Claude Code as a separate connector:
 
 ```sh
-WEJOB_MCP_URL=http://127.0.0.1:8787/mcp
+claude mcp add --transport http wejob-local http://127.0.0.1:8787/mcp
 ```
-
-The manifest reads `${WEJOB_MCP_URL:-https://mcp.wejob.ch/mcp}`, so setting the
-variable swaps the endpoint without editing files.
 
 Open a **new session** after (re)installing the plugin — existing sessions
 don't pick up new plugin skills or MCP tools.

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Claude plugin 0.1.1)
+- The plugin manifest now uses the fixed MCP URL `https://mcp.wejob.ch/mcp`
+  instead of a `${WEJOB_MCP_URL:-...}` variable, which the Claude plugin
+  directory cannot read.
+- Added `privacyPolicyUrl` (`https://wejob.ch/privacy`) to the plugin manifest.
+
 ### Added
 - Documented validated direct MCP usage with GitHub Copilot in VS Code, Gemini CLI, and Grok/xAI.
 - Source code of the MCP server deployed at `https://mcp.wejob.ch/mcp`, with its

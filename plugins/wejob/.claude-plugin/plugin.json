@@ -1,13 +1,14 @@
 {
   "name": "wejob",
   "displayName": "WeJob",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Search public WeJob jobs, formations, and company profiles. Read-only access to the WeJob production MCP server.",
   "author": {
     "name": "WeJob",
     "url": "https://wejob.ch"
   },
   "homepage": "https://wejob.ch",
+  "privacyPolicyUrl": "https://wejob.ch/privacy",
   "keywords": [
     "jobs",
     "formations",
@@ -19,7 +20,7 @@
   "mcpServers": {
     "wejob": {
       "type": "http",
-      "url": "${WEJOB_MCP_URL:-https://mcp.wejob.ch/mcp}"
+      "url": "https://mcp.wejob.ch/mcp"
     }
   }
 }
